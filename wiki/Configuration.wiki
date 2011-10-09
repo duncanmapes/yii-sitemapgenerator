@@ -1,7 +1,7 @@
 #summary Configuration of extension.
 All configuration of sitemaps are processed from controller which provides action for sitemap, by default is _!SiteController_.
 
-You must add to controllers _sitemaps()_ public method.
+You must add to controller _sitemaps()_ public method.
 
 ==Single sitemap.xml file==
 Default configuration is:
