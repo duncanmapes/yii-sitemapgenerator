@@ -1,0 +1,92 @@
+#summary Adding URLs to sitemap
+
+= Adding URLs to sitemap =
+===Single URL===
+{{{
+/**
+ * @sitemap
+ */
+public function actionIndex()
+{
+  ...
+}
+}}}
+===Single URL with parameters===
+
+Parameters must be space-separated. URL will be resolved by action.
+{{{
+/**
+ * @sitemap priority=0.5 lastmod=2012-12-25 changefreq=monthly
+ */
+public function actionIndex()
+{
+  ...
+}
+}}}
+You can override action route resolving by setting parameter *route*.
+{{{
+/**
+ * @sitemap route=/site/index
+ */
+public function actionIndex()
+{
+  ...
+}
+}}}
+Note: _all parameters are optional._
+===Multiple (dynamic) URLs===
+You can dynamically add URLs by setting _dataSource_ parameter to controllers public method name, which will generate URLs data array. URLs will be created by Yii::app()->createAbsoluteUrl($route,$params).
+{{{
+/**
+ * @sitemap dataSource=getModelsUrls
+ */
+public function actionView($id) { ... }
+public function getModelsUrls()
+{
+    $models=MyModel::model()->findAll();
+    $data=array();
+    foreach($models as $model)
+        $data[]=array(
+            'params'=>array('id'=>$model->id),
+                // Optional parameters
+            'changefreq'=>'monthly',
+            'priority'=>0.5,
+            'lastmod'=>$model->update_time,
+        );
+    return $data;
+}
+}}}
+Note: _if @sitemap parameters is specified, they will be used as default for all parameters of URLs_.
+
+===Custom action URLs===
+If you are using CViewAction or other custom action class, you can add URLs to sitemap by this way:
+{{{
+/**
+ * Custom controllers actions() declaring.
+ */
+public function actions()
+{
+    return array(
+        'page'=>array( 'class'=>'CViewAction'),
+    );
+}
+/**
+ * @sitemap route=/site/page dataSource=getViewPages
+ */
+public function getViewPages()
+{
+    $pages_path=Yii::getPathOfAlias('webroot.themes.'.Yii::app()->theme->name.'.views.site.pages'); // This is path if you have active theme, change it to yours if needed.
+    return array(
+        array(
+            'params'=>array('view'=>'about'),
+        ),
+        array(
+            'params'=>array('view'=>'rules'),
+                // Optional parameters
+            'changefreq'=>'daily',
+            'priority'=>0.9,
+            'lastmod'=>filemtime($pages_path.'/rules.php'),
+        ),
+    );
+}
+}}}
