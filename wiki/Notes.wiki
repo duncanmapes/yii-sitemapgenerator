@@ -1,0 +1,17 @@
+#summary Additional notes about sitemaps.
+
+===About sitemaps===
+[http://www.sitemaps.org/ Sitemaps.org]
+
+===Robots.txt===
+Add to your robots.txt following directive:
+
+*`Sitemap: http://www.example.com/sitemap.xml`*
+
+[http://www.sitemaps.org/protocol.php#informing Details]
+
+===PHP Timezone===
+You may need to setup your timezone if it's not set correctly in
+PHP config or datetime values for _'lastmod'_ attributes.
+[http://php.net/manual/en/datetime.formats.php More about datetime formats].
+All datetime values will be converted to [http://www.w3.org/TR/NOTE-datetime W3C datetime format].
