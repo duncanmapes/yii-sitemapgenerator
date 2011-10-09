@@ -1,4 +1,4 @@
-#summary Adding URLs to sitemap
+#summary Adding URLs to sitemap.
 
 = Adding URLs to sitemap =
 ===Single URL===
