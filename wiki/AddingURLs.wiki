@@ -35,17 +35,6 @@ public function actionIndex()
 
 *dataSource=methodName* - controllers public method, which will provide data for dynamic URLs generation (for examples see section of adding urls). More about these xml attributes: [http://www.sitemaps.org/protocol.php#xmlTagDefinitions sitemap.xml tag definitions]
 
-
-You can override action route resolving by setting parameter *route*.
-{{{
-/**
- * @sitemap route=/site/index
- */
-public function actionIndex()
-{
-  ...
-}
-}}}
 Note: _all parameters are optional._
 ===Multiple (dynamic) URLs===
 You can dynamically add URLs by setting _dataSource_ parameter to controllers public method name, which will generate URLs data array. URLs will be created by Yii::app()->createAbsoluteUrl($route,$params).
