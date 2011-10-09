@@ -1,0 +1,77 @@
+#summary Configuration of extension.
+All configuration of sitemaps are processed from controller which provides action for sitemap, by default is _!SiteController_.
+
+You must add to controllers _sitemaps()_ public method.
+
+==Single sitemap.xml file==
+Default configuration is:
+{{{
+/**
+ * Returns config for sitemap generator
+ * @return array
+ */
+public function sitemaps()
+{
+	return array(
+		'sitemap.xml'=>array(
+			'aliases'=>'application.controllers',
+		),
+	);
+}
+}}}
+*Parameters for sitemap.xml file*
+{{{
+public function sitemaps()
+{
+	return array(
+		'sitemap.xml'=>array(
+			'aliases'=>'application.controllers',		
+// Other optional parameters (will be used as defaults for all sitemap URLs)
+			'routeStructure'=>'application,modules,controllers',
+			'lastmod'=>time(),
+			'priority'=>0.6,
+			'changefreq'=>'yearly',
+			'enabled'=>true,	// allow to disable sitemap (debug option)
+		),
+	);
+}
+}}}
+Note:
+
+*aliases* parameter describes where extension should search for URLs data for current sitemap file. Can direct to folder of controllers or single controller. Specified as basic yii-alias record. Can be set as an array of aliases, or comma-separated string.
+
+*routeStructure* parameter describes structure of yii routes. By default it's: _'application,modules,controllers'_. Used for URL route resolving.
+
+==Multiple sitemaps and sitemap index file==
+Configuration of multiple sitemaps files is identical to single, except that _sitemap.xml_ record must have only single option _'index'_ set to *true*.
+
+Example:
+{{{
+/**
+ * Returns config for sitemap generator
+ * @return array
+ */
+public function sitemaps()
+{
+	return array(
+		'sitemap.xml'=>array(
+			'index'=>true,
+		),
+		// All keys must be named as: sitemap[NAME].xml
+		'sitemapCatalog.xml'=>array(
+			'aliases'=>'application.modules.catalog.controllers',
+			'lastmod'=>time(), // Optional. By default is now.
+			
+// Other optional parameters (will be used as defaults for all sitemap URLs)
+			'routeStructure'=>'application,modules,controllers',
+			'priority'=>0.6,
+			'changefreq'=>'yearly',
+			'enabled'=>true,	// allow to disable sitemap (debug option)
+		),
+		'sitemapForum.xml'=>array(
+			'aliases'=>'application.modules.forum.controllers',
+		),
+	);
+}
+}}}
+Note: *no* additional configuration to _config/main.php_ needed.
