@@ -1,6 +1,6 @@
 #summary Extension installation.
 1. Extract release files to *protected/extensions/sitemapgenerator*. 
-Expected directory structure: _protected/extensions/sitemapgenerator/SitemapGenerator.php _.
+Expected directory structure: *protected/extensions/sitemapgenerator/SitemapGenerator.php*.
 
 
 2. Configuration of */protected/config/main.cfg*
