@@ -33,7 +33,7 @@ public function actionIndex()
 
 *lastmod=2012-12-25* - URLs datetime of last modification. Will be formatted to W3C datetime format.
 
-*dataSource=methodName* - controllers public method, which will provide data for dynamic URLs generation (for examples see section of adding urls). More about these xml attributes: [sitemap.xml tag definitions http://www.sitemaps.org/protocol.php#xmlTagDefinitions]
+*dataSource=methodName* - controllers public method, which will provide data for dynamic URLs generation (for examples see section of adding urls). More about these xml attributes: [sitemap.xml_tag_definitions http://www.sitemaps.org/protocol.php#xmlTagDefinitions]
 
 
 You can override action route resolving by setting parameter *route*.
