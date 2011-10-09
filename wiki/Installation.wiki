@@ -37,6 +37,6 @@ public function actions()
 }}}
 
 That's all.
-Now you can add to your sitemap.xml file any URLs from _'application.controllers'_ folder. File will be accessible by URL: http://yourhost/sitemap.xml
+Now you can add to your sitemap.xml file any URLs from _'application.controllers'_ folder. File will be accessible by URL: `http://yourhost/sitemap.xml`
 
 If you need more complex configuration or even index file for sitemaps, please see [Configuration Configuration wiki page].
