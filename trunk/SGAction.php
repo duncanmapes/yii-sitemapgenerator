@@ -16,10 +16,10 @@ class SGAction extends CAction
 			$config=array('sitemap.xml'=>array());
 		
 		if (!is_array($config))
-			throw new Exception('Controllers sitemaps() method must return configuration as an array.');
+			throw new Exception(Yii::t('sitemapgenerator.msg','Controllers sitemaps() method must return configuration as an array.'));
 		
 		if (!isset($config[$mapName]))
-				throw new CHttpException(404,'Sitemap file not founded.');
+				throw new CHttpException(404,Yii::t('sitemapgenerator.msg','Sitemap file not founded.'));
 		
 		$map_config=$config[$mapName];
 		require_once(dirname(__FILE__).DIRECTORY_SEPARATOR.'SitemapGenerator.php');
@@ -38,7 +38,7 @@ class SGAction extends CAction
 			SitemapGenerator::renderIndex($config);
 		} else {														// Basic sitemap
 			if (isset($map_config['enabled']) && !$map_config['enabled'])
-				throw new CHttpException(404,'Sitemap file disabled.');
+				throw new CHttpException(404,Yii::t('sitemapgenerator.msg','Sitemap file disabled.'));
 			
 			SitemapGenerator::render($map_config['aliases'],$map_config);
 		}
