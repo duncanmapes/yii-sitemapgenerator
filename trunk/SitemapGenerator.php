@@ -3,7 +3,7 @@
  * Sitemap generator
  * @author Evgeny Lexunin <lexunin@gmail.com>
  * @link http://www.yiiframework.com/extension/sitemapgenerator/
- * @version 0.7a
+ * @version 0.8a
  * @license New BSD
  */
 /**
@@ -56,6 +56,8 @@ class SitemapGenerator
 	public $default_priority=0.8;
 	public $default_lastmod;
 	public $default_routeStructure='application,modules,controllers';
+	public $default_model_params='model:id';
+	public $default_weblogroutes=array('CWebLogRoute','CProfileLogRoute','YiiDebugToolbarRoute');
 	
 	/**
 	 * @var array of aliases to controllers location
@@ -87,10 +89,10 @@ XML;
 </sitemapindex>
 XMLINDEX;
 		if (!class_exists('SimpleXMLElement'))
-			throw new Exception('SimpleXML extension is required.');
+			throw new Exception(Yii::t('sitemapgenerator.msg','SimpleXML extension is required.'));
 		
 		if (!class_exists('ReflectionClass'))
-			throw new Exception('Reflection extension is required.');
+			throw new Exception(Yii::t('sitemapgenerator.msg','Reflection extension is required.'));
 		
 		if ($aliases!==null)
 			$this->_aliases=$this->configToArray($aliases);
@@ -136,7 +138,7 @@ XMLINDEX;
 			header('Pragma: no-cache');
 			echo $map->getIndexAsXml();
 		} catch (Exception $e) {
-			Yii::log('SitemapGenerator error: '.$e->getMessage(), CLogger::LEVEL_ERROR, 'application.sitemapGenerator');
+			self::logExceptionError($e);
 			if (YII_DEBUG) throw $e;
 		}
 		Yii::app()->end();
@@ -149,7 +151,7 @@ XMLINDEX;
 	public function createSitemapIndex($sitemaps)
 	{
 		if (!is_array($sitemaps))
-			throw new Exception('Sitemaps must be set as array. Current value: '.print_r($params['params'],true));
+			throw new Exception(Yii::t('sitemapgenerator.msg','Sitemaps must be set as array. Current value: {value}',array('{value}'=>print_r($params['params'],true))));
 		
 		foreach($sitemaps as $s)
 			$this->addSitemap($s);
@@ -171,7 +173,7 @@ XMLINDEX;
 			header('Pragma: no-cache');
 			echo $map->getAsXml();
 		} catch (Exception $e) {
-			Yii::log('SitemapGenerator error: '.$e->getMessage(), CLogger::LEVEL_ERROR, 'application.sitemapGenerator');
+			self::logExceptionError($e);
 			if (YII_DEBUG) throw $e;
 		}
 		Yii::app()->end();
@@ -185,7 +187,7 @@ XMLINDEX;
 	{
 		try {
 			if (!function_exists('gzencode'))
-				throw new Exception('Zlib extension must be enabled.');
+				throw new Exception(Yii::t('sitemapgenerator.msg','Zlib extension must be enabled.'));
 			
 			$class=__CLASS__;
 			$map=new $class($aliases);
@@ -201,7 +203,7 @@ XMLINDEX;
 			header('Pragma: no-cache');
 			echo $gzip_output;
 		} catch (Exception $e) {
-			Yii::log('SitemapGenerator error: '.$e->getMessage(), CLogger::LEVEL_ERROR, 'application.sitemapGenerator');
+			self::logExceptionError($e);
 			if (YII_DEBUG) throw $e;
 		}
 		Yii::app()->end();
@@ -214,7 +216,7 @@ XMLINDEX;
 	public function setDefaults($defaults)
 	{
 		if (!is_array($defaults))
-			throw new Exception("Sitemap defaults must be set as an array.");
+			throw new Exception(Yii::t('sitemapgenerator.msg',"Sitemap defaults must be set as an array."));
 		
 		if (!empty($defaults)) {
 			if (isset($defaults['changefreq']))
@@ -238,8 +240,11 @@ XMLINDEX;
         if ($log_router!==null) {
 			$routes=$log_router->getRoutes();
 			foreach ($routes as $route)
-                if (($route instanceof CWebLogRoute) || ($route instanceof CProfileLogRoute))
-                    $route->enabled = false;
+				foreach ($this->default_weblogroutes as $route_class)
+					if ($route instanceof $route_class) {
+						$route->enabled = false;
+						break;
+					}
 		}
 	}
 	
@@ -249,7 +254,7 @@ XMLINDEX;
 	private function scanControllersAliases()
 	{
 		if (empty($this->_aliases))
-				throw new Exception('Controllers aliases is not set.');
+				throw new Exception(Yii::t('sitemapgenerator.msg','Controllers aliases is not set.'));
 		
 		foreach ($this->_aliases as $alias)
 			$this->scanControllers($alias);
@@ -264,7 +269,7 @@ XMLINDEX;
 		$path=Yii::getPathOfAlias($alias);
 		
 		if (empty($path))
-			throw new Exception("Alias path not founded. Alias: '$alias'");
+			throw new Exception(Yii::t('sitemapgenerator.msg',"Alias path not founded. Alias: '{alias}'",array('{alias}'=>$alias)));
 		
 		if (is_dir($path)) {
 			$files=scandir(Yii::getPathOfAlias($alias));
@@ -275,13 +280,12 @@ XMLINDEX;
 			if (($pos=strpos(basename($path),'Controller'))!==false) 
 				$this->parseController($alias);
 		} else
-			throw new Exception("Alias is not directory or file. Alias: '$alias'");
+			throw new Exception(Yii::t('sitemapgenerator.msg',"Alias is not directory or file. Alias: '{alias}'",array('{alias}'=>$alias)));
 	}
 	
 	/**
 	 * Parses controllers methods to gain urls data
-	 * @param string $alias alias of Controler class file
-	 * @return boolean 
+	 * @param string $alias Alias of Controler class file
 	 */
 	private function parseController($alias)
 	{
@@ -295,23 +299,177 @@ XMLINDEX;
 		foreach ($methods as $m)
 		{
 			$comment=$m->getDocComment();
-			if (strpos($comment, '@sitemap')!==false) {
-				preg_match('/@sitemap(.*)/u', $comment, $result);
+			if (strpos($comment, '@sitemap')!==false) {		// Precheck with quick function
+				$results=array();
+				preg_match_all('/@sitemap(.*)/u', $comment, $results);
 				
-															// Parse params
-				$params= (!empty($result[1])) ? $this->parseParamsString($result[1]) : array();
-				$route=$this->createRoute($alias,$m->name);
-				
-				if (isset($params['dataSource'])) {			// get dataSource to urls_data
-					$data_method=$params['dataSource'];
-					if ($controller_instance===null)
-						$controller_instance=new $class('tempInstance');
-					$params['urls_data']=$controller_instance->{$data_method}();
+				foreach ($results[1] as $result)
+				{
+																// Parse params
+					$params= (!empty($result)) ? $this->parseParamsString($result) : array();
+					$route=$this->createRoute($alias,$m->name);
+
+					if (isset($params['dataSource'])) {			// get dataSource to urls_data
+						$data_method=$params['dataSource'];
+
+						if (substr($data_method,0,6)==='model:') // Model Urls
+							$this->harvestModelUrlData($params);
+						elseif (substr($data_method,0,5)==='view:') // View Urls
+							$this->harvestViewUrlData($params);
+						else {										// Method Urls
+							if ($controller_instance===null)
+								$controller_instance=new $class('tempInstance');
+							$params['urls_data']=$controller_instance->{$data_method}();
+						}
+					}
+					$this->parseUrls($route,$params);
 				}
-				
-				$this->parseUrls($route,$params);
 			}
 		}
+	}
+	
+	/**
+	 * Harvests model URLs by given parameters
+	 * Returns all harvested data into $params['urls_data']
+	 * @param array $params Passed by reference
+	 */
+	private function harvestModelUrlData(&$params)
+	{
+		$data=array();
+		$attr_list=array('lastmod','priority','changefreq','loc');
+		$attr_params=array();
+		
+		foreach($attr_list as $attr)
+			$attr_params[$attr]=$this->parseModelAttr($params[$attr]);
+		
+		if (!isset($params['params']))
+			$params['params']=$this->default_model_params;
+		
+		$attr_params['params']=$this->parseModelAttr($params['params'],'/^[\w\,]+$/ui');
+			
+		$model_data_name=substr($params['dataSource'],6);
+		
+		if (preg_match('/^\w+$/ui', $model_data_name))
+			$models=$model_data_name::model()->findAll();
+		else
+			$models=$this->evalModelAttr($model_data_name);
+		
+		if ($models!==null && is_array($models))
+			foreach ($models as $model)
+			{
+				$pa=array();
+					// Common parameters ($attr_list) evaluation
+				foreach($attr_list as $attr)
+					if ($attr_params[$attr]['value']!==null)
+						$pa[$attr]= ($attr_params[$attr]['simple']) ? $model->{$attr_params[$attr]['value']} : $this->evalModelAttr($attr_params[$attr]['value'],$model) ;
+					
+					// 'params' parameter evaluation
+				if ($attr_params['params']['value']!==null) {
+					$params_data=array();
+					if ($attr_params['params']['simple']) {
+						$all_params_attrs=explode(',',$attr_params['params']['value']);
+						foreach ($all_params_attrs as $attr)
+							$params_data[$attr]=$model->{$attr};
+					} else {
+						$params_data=$this->evalModelAttr($attr_params['params']['value'],$model);
+					}
+					$pa['params']=$params_data;
+				}
+						
+				$data[]=$pa;
+			}
+		$params['urls_data']=$data;
+	}
+	
+	/**
+	 * Parses URL parameter if it's set as model attribute ('model:..')
+	 * @param string $param Full parameter value
+	 * @param string $simple_criteria_pattern Regex pattern for detecting simple form of record
+	 * @return array Of parsed value and 'simple' marker
+	 */
+	private function parseModelAttr($param,$simple_criteria_pattern='/^\w+$/ui')
+	{
+		$attr=null;
+		$simple=false;
+		if (substr($param,0,6)==='model:') {	// Lastmod attr
+			$attr=trim(substr($param,6));
+			if (empty($attr))
+				$attr=null;
+			elseif (preg_match($simple_criteria_pattern, $attr))
+				$simple=true;
+		}
+		return array('value'=>$attr,'simple'=>$simple);
+	}
+	
+	/**
+	 * Evaluates model attribute by given expression
+	 * Throws exception on evaluation error.
+	 * @param string $attr_expr Given expression
+	 * @param CActiveRecord $data AR model
+	 * @return mixed Evaluation result
+	 */
+	private function evalModelAttr($attr_expr,$data=null)
+	{
+		ob_start();
+		$result=eval('return '.$attr_expr.';');
+		ob_end_clean();
+		if ($result===false)
+			throw new Exception(Yii::t('sitemapgenerator.msg','Error occured while trying to eval() model expression. Expression was: {value}',array('{value}'=>$attr_expr)));
+		return $result;
+	}
+	
+	/**
+	 * Harvests views URLs by given parameters
+	 * Used for CViewAction class
+	 * Returns all harvested data into $params['urls_data']
+	 * @link http://www.yiiframework.com/doc/api/1.1/CViewAction
+	 * @param array $params Passed by reference
+	 */
+	private function harvestViewUrlData(&$params)
+	{
+		$data=array();
+		$view_aliases=$this->configToArray(substr($params['dataSource'],5));
+		
+			// View GET parameter
+		if (isset($params['params']) && (substr($params['params'],0,5)==='view:'))
+			$view_param=trim(substr($params['params'],5));
+		if (empty($view_param))
+			$view_param='view';
+		
+		foreach ($view_aliases as $alias)
+		{
+			$path=Yii::getPathOfAlias($alias);
+			if (is_dir($path)) {
+				$files=CFileHelper::findFiles($path,array(
+					'fileTypes'=>array('php'),
+					'exclude'=>array('.svn'),
+					'level'=>0,
+					));
+				foreach ($files as $file)
+					$data[]=$this->getUrlByViewFile($file,$view_param);
+			} elseif (is_file($path.'.php')) {
+				$data[]=$this->getUrlByViewFile($path.'.php',$view_param);
+			} else {
+				throw new Exception(Yii::t('sitemapgenerator.msg',"Alias is not directory or file. Alias: '{alias}'",array('{alias}'=>$alias)));
+			}
+		}
+		$params['urls_data']=$data;
+	}
+	
+	/**
+	 * Returns URL data for view file
+	 * @param string $file Filepath
+	 * @param string $view_param GET parameter for URL view
+	 * @return array
+	 */
+	private function getUrlByViewFile($file,$view_param)
+	{
+		$data=array();
+		$t=filemtime($file);
+		if ($t!==false)
+			$data['lastmod']=$t;
+		$data['params']=array($view_param=>basename($file,'.php'));
+		return $data;
 	}
 	
 	/**
@@ -322,7 +480,7 @@ XMLINDEX;
 	 */
 	private function createRoute($alias,$action_method_name)
 	{
-		if (!function_exists('lcfirst')) {
+		if (!function_exists('lcfirst')) {	// php 5.2 fix
 			function lcfirst($str) { $str{0}=strtolower($str{0}); return $str; }
 		}
 		$route=explode('.',$alias);
@@ -345,10 +503,10 @@ XMLINDEX;
 		$raw=array_filter($raw);
 		$data=array();
 		foreach ($raw as $param) {
-			list($key,$val)=explode('=',$param);
+			list($key,$val)=explode('=',$param,2);
 			
 			if (empty($val))
-				throw new Exception("Option '$key' cannot be empty.");
+				throw new Exception(Yii::t('sitemapgenerator.msg',"Option '{key}' cannot be empty.",array('{key}'=>$key)));
 			
 			$data[$key]=$val;
 		}
@@ -416,20 +574,20 @@ XMLINDEX;
 			 * http://www.sitemaps.org/faq.php#faq_sitemap_size
 			 */
 			if ($this->_url_counter>=50000)
-				return;
+				throw new Exception(Yii::t('sitemapgenerator.msg','URLs quantity limit per sitemap file exceeded.'));
 
 			if (!is_array($params['params']))
-				throw new Exception('Url parameters must be set as array. Current value: '.print_r($params['params'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url parameters must be set as array. Current value: {value}',array('{value}'=>print_r($params['params'],true))));
 			if (!isset($params['route']) && !isset($params['loc']))
-				throw new Exception('"route" or "loc" options must be set.');
+				throw new Exception(Yii::t('sitemapgenerator.msg','"route" or "loc" options must be set.'));
 			if (isset($params['route']) && !is_string($params['route']))
-				throw new Exception('Url route must be set as string. Current value: '.print_r($params['route'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url route must be set as string. Current value: {value}',array('{value}'=>print_r($params['route'],true))));
 			if (!is_string($params['changefreq']))
-				throw new Exception('Url changefreq must be set as string. Current value: '.print_r($params['changefreq'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url changefreq must be set as string. Current value: {value}',array('{value}'=>print_r($params['changefreq'],true))));
 			if (isset($params['loc']) && !is_string($params['loc']))
-				throw new Exception('Url loc must be set as string. Current value: '.print_r($params['loc'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url loc must be set as string. Current value: {value}',array('{value}'=>print_r($params['loc'],true))));
 			if (!is_string($params['lastmod']) && !is_int($params['lastmod']))
-				throw new Exception('Url lastmod must be set as string. Current value: '.print_r($params['lastmod'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url lastmod must be set as string. Current value: {value}',array('{value}'=>print_r($params['lastmod'],true))));
 
 			$link= !isset($params['loc']) ? Yii::app()->createAbsoluteUrl($params['route'],$params['params']) : $params['loc'] ;
 			$xmlurl=$this->_xml->addChild('url');
@@ -439,7 +597,7 @@ XMLINDEX;
 			$xmlurl->addChild('priority',$params['priority']);
 			++$this->_url_counter;
 		} catch (Exception $e) {
-			Yii::log('SitemapGenerator error: '.$e->getMessage(), CLogger::LEVEL_ERROR, 'application.sitemapGenerator');
+			self::logExceptionError($e);
 			if (YII_DEBUG) throw $e;
 		}
 	}
@@ -451,8 +609,12 @@ XMLINDEX;
 	private function addSitemap($params)
 	{
 		try {
+			/* 
+			 * Max sitemaps per sitemap-index file : 
+			 * http://www.sitemaps.org/faq.php#faq_sitemap_size
+			 */
 			if ($this->_sitemap_counter>=1000)
-				return;
+				throw new Exception(Yii::t('sitemapgenerator.msg','Sitemaps quantity limit per sitemap-index file exceeded.'));
 
 			if (!isset($params['lastmod']))
 				$params['lastmod']=$this->default_lastmod;
@@ -460,15 +622,15 @@ XMLINDEX;
 				$params['params']=array();
 
 			if (!is_array($params['params']))
-				throw new Exception('Url parameters must be set as array. Current value: '.print_r($params['params'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url parameters must be set as array. Current value: {value}',array('{value}'=>print_r($params['params'],true))));
 			if (!isset($params['route']) && !isset($params['loc']))
-				throw new Exception('"route" or "loc" options must be set.');
+				throw new Exception(Yii::t('sitemapgenerator.msg','"route" or "loc" options must be set.'));
 			if (isset($params['route']) && !is_string($params['route']))
-				throw new Exception('Url route must be set as string. Current value: '.print_r($params['route'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url route must be set as string. Current value: {value}',array('{value}'=>print_r($params['route'],true))));
 			if (isset($params['loc']) && !is_string($params['loc']))
-				throw new Exception('Url loc must be set as string. Current value: '.print_r($params['loc'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url loc must be set as string. Current value: {value}',array('{value}'=>print_r($params['loc'],true))));
 			if (!is_string($params['lastmod']) && !is_int($params['lastmod']))
-				throw new Exception('Url lastmod must be set as string. Current value: '.print_r($params['lastmod'],true));
+				throw new Exception(Yii::t('sitemapgenerator.msg','Url lastmod must be set as string. Current value: {value}',array('{value}'=>print_r($params['lastmod'],true))));
 
 			$link= !isset($params['loc']) ? Yii::app()->createAbsoluteUrl($params['route'],$params['params']) : $params['loc'] ;
 
@@ -477,7 +639,7 @@ XMLINDEX;
 			$sitemap->addChild('lastmod',$this->formatDatetime($params['lastmod']));
 			++$this->_sitemap_counter;
 		} catch (Exception $e) {
-			Yii::log('SitemapGenerator error: '.$e->getMessage(), CLogger::LEVEL_ERROR, 'application.sitemapGenerator');
+			self::logExceptionError($e);
 			if (YII_DEBUG) throw $e;
 		}
 	}
@@ -496,10 +658,10 @@ XMLINDEX;
 				$dt=new DateTime($val);
 				$result=$dt->format(DateTime::W3C);
 				if ($result===false)
-					throw new Exception('Unable to format datetime object. Datetime value: '.$val);
+					throw new Exception(Yii::t('sitemapgenerator.msg','Unable to format datetime object. Datetime value: {value}',array('{value}'=>$val)));
 			}
 		} catch (Exception $e) {
-			throw new Exception('Unable to parse given datetime. Error: '.$e->getMessage());
+			throw new Exception(Yii::t('sitemapgenerator.msg','Unable to parse given datetime. Error: {error}',array('{error}'=>$e->getMessage())));
 		}
 		return $result;
 	}
@@ -516,6 +678,15 @@ XMLINDEX;
 		elseif (is_string($data))
 			return array_filter(explode(',',$data));
 		else
-			throw new Exception('Aliases elements must be set as string or an array.');
+			throw new Exception(Yii::t('sitemapgenerator.msg','Aliases elements must be set as string or an array.'));
+	}
+	
+	/**
+	 * Logs current exception error
+	 * @param Exception $e 
+	 */
+	private static function logExceptionError($e)
+	{
+	    Yii::log(Yii::t('sitemapgenerator.msg','SitemapGenerator error: {error}',array('{error}'=>$e->getMessage())), CLogger::LEVEL_ERROR, 'application.sitemapGenerator');
 	}
 }
