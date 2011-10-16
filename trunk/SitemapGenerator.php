@@ -3,6 +3,7 @@
  * Sitemap generator
  * @author Evgeny Lexunin <lexunin@gmail.com>
  * @link http://www.yiiframework.com/extension/sitemapgenerator/
+ * @link http://code.google.com/p/yii-sitemapgenerator/
  * @version 0.8a
  * @license New BSD
  */
@@ -57,7 +58,6 @@ class SitemapGenerator
 	public $default_lastmod;
 	public $default_routeStructure='application,modules,controllers';
 	public $default_model_params='model:id';
-	public $default_weblogroutes=array('CWebLogRoute','CProfileLogRoute','YiiDebugToolbarRoute');
 	
 	/**
 	 * @var array of aliases to controllers location
@@ -123,28 +123,6 @@ XMLINDEX;
 	}
 	
 	/**
-	 * Renders sitemap index by given array of params
-	 * @param array $params
-	 */
-	public static function renderIndex($params)
-	{
-		try {
-			$class=__CLASS__;
-			$map=new $class();
-			$map->createSitemapIndex($params);
-			$map->disableWebLogRouters();
-			header("Content-type: text/xml");
-			header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
-			header('Pragma: no-cache');
-			echo $map->getIndexAsXml();
-		} catch (Exception $e) {
-			self::logExceptionError($e);
-			if (YII_DEBUG) throw $e;
-		}
-		Yii::app()->end();
-	}
-	
-	/**
 	 * Creates sitemap index xml file
 	 * @param array $sitemaps 
 	 */
@@ -155,58 +133,6 @@ XMLINDEX;
 		
 		foreach($sitemaps as $s)
 			$this->addSitemap($s);
-	}
-	
-	/**
-	 * Renders sitemap.xml
-	 * @param array $aliases
-	 */
-	public static function render($aliases=null,$defaults=array())
-	{
-		try {
-			$class=__CLASS__;
-			$map=new $class($aliases);
-			$map->setDefaults($defaults);
-			$map->disableWebLogRouters();
-			header("Content-type: text/xml");
-			header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
-			header('Pragma: no-cache');
-			echo $map->getAsXml();
-		} catch (Exception $e) {
-			self::logExceptionError($e);
-			if (YII_DEBUG) throw $e;
-		}
-		Yii::app()->end();
-	}
-	
-	/**
-	 * Renders sitemap.xml gz-encoded
-	 * @param array $aliases 
-	 */
-	public static function renderAsGz($aliases=null,$defaults=array())
-	{
-		try {
-			if (!function_exists('gzencode'))
-				throw new Exception(Yii::t('sitemapgenerator.msg','Zlib extension must be enabled.'));
-			
-			$class=__CLASS__;
-			$map=new $class($aliases);
-			$map->setDefaults($defaults);
-			$map->disableWebLogRouters();
-			$output=$map->getAsXml();
-			@ini_set('zlib.output_compression',0);
-			$gzip_output = gzencode($output,9);
-			header('Content-Type: text/xml');
-			header('Content-Encoding: gzip');
-			header('Content-Length: '.strlen($gzip_output));
-			header('Cache-Control: no-cache, no-store, max-age=0, must-revalidate');
-			header('Pragma: no-cache');
-			echo $gzip_output;
-		} catch (Exception $e) {
-			self::logExceptionError($e);
-			if (YII_DEBUG) throw $e;
-		}
-		Yii::app()->end();
 	}
 	
 	/**
@@ -227,24 +153,6 @@ XMLINDEX;
 				$this->default_lastmod=$defaults['lastmod'];
 			if (isset($defaults['routeStructure']))
 				$this->default_routeStructure=$defaults['routeStructure'];
-		}
-	}
-	
-	/**
-	 * Disables CWebLogRoute and CProfileLogRoute logRouters
-	 * for clean XML outputpublic $default_lastmod_format='Y-m-d';
-	 */
-	public function disableWebLogRouters()
-	{
-        $log_router = Yii::app()->getComponent('log');
-        if ($log_router!==null) {
-			$routes=$log_router->getRoutes();
-			foreach ($routes as $route)
-				foreach ($this->default_weblogroutes as $route_class)
-					if ($route instanceof $route_class) {
-						$route->enabled = false;
-						break;
-					}
 		}
 	}
 	

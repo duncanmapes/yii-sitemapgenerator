@@ -3,6 +3,7 @@
  * Sitemap generator UrlManager Rule
  * @author Evgeny Lexunin <lexunin@gmail.com>
  * @link http://www.yiiframework.com/extension/sitemapgenerator/
+ * @link http://code.google.com/p/yii-sitemapgenerator/
  * @version 0.8a
  * @license New BSD
  */
