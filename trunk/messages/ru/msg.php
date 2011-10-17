@@ -19,8 +19,7 @@
  * @version $Id: $
  */
 return array (
-  'Sitemap file configuration must be set as an array.' => 'Конфигурация sitemap файла должна быть задана в виде массива.',
-  'Specified cache component not founed. Cache ID: {value}' => 'Указанный cache компонент не найден.',
+  'Cache configuration must be set as array.' => 'Конфигурация кеширования должна быть задана в виде массива.',
   '"route" or "loc" options must be set.' => 'Должны быть установлены \'route\' или \'loc\' параметры.',
   'Alias is not directory or file. Alias: \'{alias}\'' => 'Алиас не указывает на директорию или файл. Алиас: \'{alias}\'',
   'Alias path not founded. Alias: \'{alias}\'' => 'Путь алиаса не найден. Алиас: \'{alias}\'',
@@ -32,11 +31,13 @@ return array (
   'Reflection extension is required.' => 'Необходим модуль Reflection.',
   'SimpleXML extension is required.' => 'Необходим модуль SimpleXML.',
   'Sitemap defaults must be set as an array.' => 'Параметры по-умолчанию для sitemap должны быть заданы в виде массива.',
+  'Sitemap file configuration must be set as an array.' => 'Конфигурация sitemap файла должна быть задана в виде массива.',
   'Sitemap file not founded or disabled.' => 'Sitemap файл не найден или отключен.',
   'SitemapGenerator error: {error}' => 'Ошибка SitemapGenerator: {error}',
   'Sitemaps configuration must be set as an array.' => 'Конфигурация sitemap файла должна быть задана в виде массив.',
   'Sitemaps must be set as array. Current value: {value}' => 'Sitemap элементы должны быть заданы в виде массива. Текущее значение: {value}',
   'Sitemaps quantity limit per sitemap-index file exceeded.' => 'Превышен лимит sitemap файлов для sitemap-index файла.',
+  'Specified cache component not founed. Cache ID: {value}' => 'Указанный cache компонент не найден.',
   'URLs quantity limit per sitemap file exceeded.' => 'Превышен лимит числа ссылок на один sitemap файл.',
   'Unable to format datetime object. Datetime value: {value}' => 'Неудалась форматирование datetime::format(). Значение даты: {value}',
   'Unable to parse given datetime. Error: {error}' => 'Неудалась конвертация даты в формат W3C. Ошибка: {error}',
