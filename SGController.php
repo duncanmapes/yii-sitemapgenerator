@@ -12,11 +12,16 @@ class SGController extends CController
 	public $config=array('sitemap'=>array());
 	public $disable_weblogroutes=true;
 	public $weblogroutes=array('CWebLogRoute','CProfileLogRoute','YiiDebugToolbarRoute');
+	public $cache_record_id='sitemap_generator_file-';
+	public $import=array();
+	public $force_include=false;
 	
 	public function actionIndex($mapName='')
 	{
 		$config=$this->normalizeConfig($this->config);
 		$mapName=basename($mapName,'.xml');
+		if (!empty($this->import))
+			$this->importAliases($this->configToArray($config['import']),$this->force_include);
 		
 		try {
 			if (!is_array($config))
@@ -29,20 +34,52 @@ class SGController extends CController
 				throw new CHttpException(404,Yii::t('sitemapgenerator.msg','Sitemap file not founded or disabled.'));
 
 			$map_config=$config[$mapName];
+			if (!is_array($map_config))
+				throw new Exception(Yii::t('sitemapgenerator.msg','Sitemap file configuration must be set as an array.'));
+			
 			require_once(dirname(__FILE__).DIRECTORY_SEPARATOR.'SitemapGenerator.php');
 
-				// GZencode mode
-			if (isset($map_config['gzencode']) && $map_config['gzencode']) {
-				if (!function_exists('gzencode'))
-					throw new Exception(Yii::t('sitemapgenerator.msg','Zlib extension must be enabled.'));
-				$gzmode=true;
-				@ini_set('zlib.output_compression',0);
-				ob_start();
-			}
-			
+				// Prepare
 			$this->setHeaders();
 			if ($this->disable_weblogroutes)
 				$this->disableWebLogRoutes();
+			
+				// Cache
+			if (isset($map_config['cache'])) {
+				$cache=Yii::app()->{$map_config['cache'][0]};
+				if ($cache===null)
+					throw new Exception(Yii::t('sitemapgenerator.msg','Specified cache component not founed. Cache ID: {value}',array('{value}'=>$map_config['cache'][0])));
+				$output=$cache->get($this->cache_record_id);
+				$cachemode=true;
+				ob_start();
+			}
+			
+				// If has cache
+			if ($output!==false) {
+				if (isset($map_config['gzencode']) && $map_config['gzencode']) {
+					$this->checkAndDisableGz();
+					$this->outputGzData($output);
+				} else {
+					echo $output;
+				}
+				ob_get_flush();
+				Yii::app()->end();
+			}
+			
+				// GZencode mode
+			if (isset($map_config['gzencode']) && $map_config['gzencode']) {
+				$this->checkAndDisableGz();
+				$gzmode=true;
+				ob_start();
+			}
+			
+				// Pre-import
+			if (isset($map_config['import'])) {
+				$force_include=(isset($map_config['force_include']) && $map_config['force_include']);
+				$this->importAliases($this->configToArray($map_config['import']),$force_include);
+			}
+			
+				// Sitemap render
 			if (isset($map_config['index']) && $map_config['index']) { // Index sitemap
 				unset($config[$mapName]);
 				$this->renderIndex($config);
@@ -54,15 +91,43 @@ class SGController extends CController
 			if ($gzmode) {
 				$output=ob_get_clean();
 				$gzip_output = gzencode($output,9);
-				header('Content-Encoding: gzip');
-				header('Content-Length: '.strlen($gzip_output));
-				echo $gzip_output;
+				$this->outputGzData($gzip_output);
+			}
+			
+				// Cache set
+			if ($cachemode) {
+				$output=ob_get_clean();
+				$dur= (isset($map_config['cache'][1])) ? $map_config['cache'][1] : 0;
+				$dep= (isset($map_config['cache'][2])) ? $map_config['cache'][2] : null;
+				$cache->set($this->cache_record_id.$mapName,$output,$dur,$dep);
+				echo $output;
 			}
 			
 		} catch (Exception $e) {
 			SitemapGenerator::logExceptionError($e);
 			if (YII_DEBUG) throw $e;
 		}
+	}
+	
+	/**
+	 * Outputs Gz encoded data and sets corresponding headers
+	 * @param string $data 
+	 */
+	private function outputGzData($data)
+	{
+		header('Content-Encoding: gzip');
+		header('Content-Length: '.strlen($data));
+		echo $data;
+	}
+	
+	/**
+	 * Checks and disables GZ module
+	 */
+	private function checkAndDisableGz()
+	{
+		if (!function_exists('gzencode'))
+			throw new Exception(Yii::t('sitemapgenerator.msg','Zlib extension must be enabled.'));
+		@ini_set('zlib.output_compression',0);
 	}
 	
 	/**
@@ -129,5 +194,29 @@ class SGController extends CController
 		$map=new SitemapGenerator($config['aliases']);
 		$map->setDefaults($config);
 		echo $map->getAsXml();
+	}
+	/**
+	 * Imports specified aliases
+	 * @param array $aliases 
+	 */
+	private function importAliases($aliases,$force_include=false)
+	{
+		foreach ($aliases as $alias)
+			Yii::import($alias,$force_include);
+	}
+	
+	/**
+	 * Formats config data to array.
+	 * @param mixed $data
+	 * @return array
+	 */
+	private function configToArray($data)
+	{
+		if (is_array($data))
+			return $data;
+		elseif (is_string($data))
+			return array_filter(explode(',',$data));
+		else
+			throw new Exception(Yii::t('sitemapgenerator.msg','Aliases elements must be set as string or an array.'));
 	}
 }
