@@ -1,40 +1,43 @@
 #summary Configuration of extension.
-All configuration of sitemaps are processed from controller which provides action for sitemap, by default is _!SiteController_.
-
-You must add to controller _sitemaps()_ public method.
+All configuration of sitemaps are processed from *protected/config/main.php* file.
 
 ==Single sitemap.xml file==
 Default configuration is:
 {{{
-/**
- * Returns config for sitemap generator
- * @return array
- */
-public function sitemaps()
-{
-	return array(
-		'sitemap.xml'=>array(
-			'aliases'=>'application.controllers',
+<?php
+return array(
+	...
+	'controllerMap'=>array(
+		'sitemap'=>array(
+			'class'=>'ext.sitemapgenerator.SGController',
+			'config'=>array(
+				'sitemap.xml'=>array(
+					'aliases'=>array(
+						'application.controllers',
+					),
+				),
+			),
 		),
-	);
-}
+	),
+	...
+);
 }}}
+
 *Parameters for sitemap.xml file*
 {{{
-public function sitemaps()
-{
-	return array(
-		'sitemap.xml'=>array(
-			'aliases'=>'application.controllers',		
+...
+'config'=>array(
+	'sitemap.xml'=>array(
+		'aliases'=>'application.controllers',		
 // Other optional parameters (will be used as defaults for all sitemap URLs)
-			'routeStructure'=>'application,modules,controllers',
-			'lastmod'=>time(),
-			'priority'=>0.6,
-			'changefreq'=>'yearly',
-			'enabled'=>true,	// allow to disable sitemap (debug option)
-		),
-	);
-}
+		'routeStructure'=>'application,modules,controllers',
+		'lastmod'=>time(),
+		'priority'=>0.6,
+		'changefreq'=>'yearly',
+		'enabled'=>true,	// allow to disable sitemap (debug option)
+	),
+),
+...
 }}}
 Note:
 
@@ -42,36 +45,28 @@ Note:
 
 *routeStructure* parameter describes structure of yii routes. By default it's: _'application,modules,controllers'_. Used for URL route resolving.
 
+Also you may configure *class pre-import* and *caching* for sitemap files. Please see corresponding wiki articles PreImportConfiguration and CacheConfiguration.
+
 ==Multiple sitemaps and sitemap index file==
 Configuration of multiple sitemaps files is identical to single, except that _sitemap.xml_ record must have only single option _'index'_ set to *true*.
 
 Example:
 {{{
-/**
- * Returns config for sitemap generator
- * @return array
- */
-public function sitemaps()
-{
-	return array(
-		'sitemap.xml'=>array(
-			'index'=>true,
+'config'=>array(
+	'sitemap.xml'=>array(
+		'index'=>true, // Indicates that index file used
+	),
+	// All keys must begin with 'sitemap'
+	'sitemapForum.xml'=>array(
+		'aliases'=>array(
+			'application.modules.forum.controllers',
 		),
-		// All keys must be named as: sitemap[NAME].xml
-		'sitemapCatalog.xml'=>array(
-			'aliases'=>'application.modules.catalog.controllers',
-			'lastmod'=>time(), // Optional. By default is now.
-			
-// Other optional parameters (will be used as defaults for all sitemap URLs)
-			'routeStructure'=>'application,modules,controllers',
-			'priority'=>0.6,
-			'changefreq'=>'yearly',
-			'enabled'=>true,	// allow to disable sitemap (debug option)
+	),
+	'sitemapBlog.xml'=>array(
+		'aliases'=>array(
+			'application.modules.blog.controllers',
 		),
-		'sitemapForum.xml'=>array(
-			'aliases'=>'application.modules.forum.controllers',
-		),
-	);
-}
+	),
+),
 }}}
-Note: *no* additional configuration to _config/main.php_ needed.
+Note: every sitemap file has the same configuration parameters as was shown in first section (single sitemap.xml file).
