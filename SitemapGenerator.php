@@ -315,7 +315,7 @@ XMLINDEX;
 	{
 		$attr=null;
 		$simple=false;
-		if (substr($param,0,6)==='model:') {	// Lastmod attr
+		if (substr($param,0,6)==='model:') {
 			$attr=trim(substr($param,6));
 			if (empty($attr))
 				$attr=null;
