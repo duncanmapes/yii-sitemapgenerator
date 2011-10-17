@@ -57,7 +57,7 @@ class SGController extends CController
 			}
 			
 				// If has cache
-			if ($output!==false) {
+			if (!empty($output)) {
 				if (isset($map_config['gzencode']) && $map_config['gzencode']) {
 					$this->checkAndDisableGz();
 					$this->outputGzData($output);
