@@ -1,4 +1,6 @@
 #summary How-to add simple model-based URLs
+_Note: model class must be imported._
+
 Basic example:
 {{{
 /**
