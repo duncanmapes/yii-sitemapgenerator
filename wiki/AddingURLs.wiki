@@ -39,7 +39,7 @@ Note: _all parameters are optional._
 
 ===Predefined methods of adding URLs===
 Extension already has built-in methods for simple adding URLs based on *CActiveRecord* models and view files for *CViewAction*.
-Please see corresponding wiki articles AddingModelBasedUrls and AddingViewBasedUrls.
+Please see corresponding wiki articles AddingModelBasedUrls and AddingViewBasedUrls. If your case is more complex, you can add URLs with your own controllers method. See example below.
 
 
 ===Multiple (dynamic) URLs===
