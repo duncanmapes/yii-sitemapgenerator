@@ -36,6 +36,12 @@ public function actionIndex()
 *dataSource=methodName* - controllers public method, which will provide data for dynamic URLs generation (for examples see section of adding urls). More about these xml attributes: [http://www.sitemaps.org/protocol.php#xmlTagDefinitions sitemap.xml tag definitions]
 
 Note: _all parameters are optional._
+
+===Predefined methods of adding URLs===
+Extension already has built-in methods for simple adding URLs based on *CActiveRecord* models and view files for *CViewAction*.
+Please see corresponding wiki articles AddingModelBasedUrls and AddingViewBasedUrls.
+
+
 ===Multiple (dynamic) URLs===
 You can dynamically add URLs by setting _dataSource_ parameter to controllers public method name, which will generate URLs data array. URLs will be created by Yii::app()->createAbsoluteUrl($route,$params).
 {{{
@@ -59,36 +65,3 @@ public function getModelsUrls()
 }
 }}}
 Note: _if @sitemap parameters is specified, they will be used as default for all parameters of URLs_.
-
-===Custom action URLs===
-If you are using CViewAction or other custom action class, you can add URLs to sitemap by this way:
-{{{
-/**
- * Custom controllers actions() declaring.
- */
-public function actions()
-{
-    return array(
-        'page'=>array( 'class'=>'CViewAction'),
-    );
-}
-/**
- * @sitemap route=/site/page dataSource=getViewPages
- */
-public function getViewPages()
-{
-    $pages_path=Yii::getPathOfAlias('webroot.themes.'.Yii::app()->theme->name.'.views.site.pages'); // This is path if you have active theme, change it to yours if needed.
-    return array(
-        array(
-            'params'=>array('view'=>'about'),
-        ),
-        array(
-            'params'=>array('view'=>'rules'),
-                // Optional parameters
-            'changefreq'=>'daily',
-            'priority'=>0.9,
-            'lastmod'=>filemtime($pages_path.'/rules.php'),
-        ),
-    );
-}
-}}}
