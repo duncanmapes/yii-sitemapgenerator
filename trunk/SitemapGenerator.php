@@ -96,7 +96,7 @@ XMLINDEX;
 			throw new Exception(Yii::t('sitemapgenerator.msg','Reflection extension is required.'));
 		
 		if ($aliases!==null)
-			$this->_aliases=$this->configToArray($aliases);
+			$this->_aliases=self::configToArray($aliases);
 		
 		$this->default_lastmod=$this->getDefaultLastmod();
 		
@@ -165,10 +165,18 @@ XMLINDEX;
 		if (empty($this->_aliases))
 				throw new Exception(Yii::t('sitemapgenerator.msg','Controllers aliases is not set.'));
 		
-		foreach ($this->_aliases as $alias)
-			$this->scanControllers($alias);
+		foreach ($this->_aliases as $k=>$v)
+		{
+			if (is_int($k))		// Basic aliases mode
+				$this->scanControllers($v);
+			elseif (is_string($k)) {	// Extended aliases mode
+				if (is_array($v) && isset($v['import']))
+					self::importAliases($v);
+				$this->scanControllers($k);
+			}
+		}
 	}
-	
+		
 	/**
 	 * Scan alias
 	 * @param string $alias 
@@ -352,7 +360,7 @@ XMLINDEX;
 	private function harvestViewUrlData(&$params)
 	{
 		$data=array();
-		$view_aliases=$this->configToArray(substr($params['dataSource'],5));
+		$view_aliases=self::configToArray(substr($params['dataSource'],5));
 		
 			// View GET parameter
 		if (isset($params['params']) && (substr($params['params'],0,5)==='view:'))
@@ -410,7 +418,7 @@ XMLINDEX;
 		$route=explode('.',$alias);
 		$action=lcfirst(substr($action_method_name,strlen('action')));
 		$controller=lcfirst(substr(array_pop($route),0,-strlen('Controller')));
-		$route=array_diff($route,$this->configToArray($this->default_routeStructure));
+		$route=array_diff($route,self::configToArray($this->default_routeStructure));
 		$route[]=$controller;
 		$route[]=$action;
 		return '/'.implode('/',$route);
@@ -595,7 +603,7 @@ XMLINDEX;
 	 * @param mixed $data
 	 * @return array
 	 */
-	private function configToArray($data)
+	public static function configToArray($data)
 	{
 		if (is_array($data))
 			return $data;
@@ -612,5 +620,17 @@ XMLINDEX;
 	public static function logExceptionError($e)
 	{
 	    Yii::log(Yii::t('sitemapgenerator.msg','SitemapGenerator error: {error}',array('{error}'=>$e->getMessage())), CLogger::LEVEL_ERROR, 'application.sitemapGenerator');
+	}
+	
+	/**
+	 * Imports specified aliases
+	 * @param array $config array('import'=>{string|array},'force_include'=>{boolean})
+	 */
+	public static function importAliases($config)
+	{
+		$force_include=(isset($config['force_include']) && $config['force_include']);
+		$aliases=self::configToArray($config['import']);
+		foreach ($aliases as $alias)
+			Yii::import($alias,$force_include);
 	}
 }

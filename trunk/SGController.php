@@ -15,13 +15,16 @@ class SGController extends CController
 	public $cache_record_id='sitemap_generator_file-';
 	public $import=array();
 	public $force_include=false;
+	public $cache=array();
 	
 	public function actionIndex($mapName='')
 	{
 		$config=$this->normalizeConfig($this->config);
 		$mapName=basename($mapName,'.xml');
+		require_once(dirname(__FILE__).DIRECTORY_SEPARATOR.'SitemapGenerator.php');
+		
 		if (!empty($this->import))
-			$this->importAliases($this->configToArray($config['import']),$this->force_include);
+			SitemapGenerator::importAliases(array('import'=>$this->import,'force_include'=>$this->force_include));
 		
 		try {
 			if (!is_array($config))
@@ -36,16 +39,15 @@ class SGController extends CController
 			$map_config=$config[$mapName];
 			if (!is_array($map_config))
 				throw new Exception(Yii::t('sitemapgenerator.msg','Sitemap file configuration must be set as an array.'));
-			
-			require_once(dirname(__FILE__).DIRECTORY_SEPARATOR.'SitemapGenerator.php');
 
 				// Prepare
 			$this->setHeaders();
 			if ($this->disable_weblogroutes)
 				$this->disableWebLogRoutes();
+			$this->mergeCacheParams($this->cache,$map_config);
 			
 				// Cache
-			if (isset($map_config['cache'])) {
+			if (isset($map_config['cache']) && (!empty($map_config['cache']))) {
 				$cache=Yii::app()->{$map_config['cache'][0]};
 				if ($cache===null)
 					throw new Exception(Yii::t('sitemapgenerator.msg','Specified cache component not founed. Cache ID: {value}',array('{value}'=>$map_config['cache'][0])));
@@ -74,10 +76,8 @@ class SGController extends CController
 			}
 			
 				// Pre-import
-			if (isset($map_config['import'])) {
-				$force_include=(isset($map_config['force_include']) && $map_config['force_include']);
-				$this->importAliases($this->configToArray($map_config['import']),$force_include);
-			}
+			if (isset($map_config['import']))
+				SitemapGenerator::importAliases($map_config);
 			
 				// Sitemap render
 			if (isset($map_config['index']) && $map_config['index']) { // Index sitemap
@@ -195,28 +195,20 @@ class SGController extends CController
 		$map->setDefaults($config);
 		echo $map->getAsXml();
 	}
-	/**
-	 * Imports specified aliases
-	 * @param array $aliases 
-	 */
-	private function importAliases($aliases,$force_include=false)
-	{
-		foreach ($aliases as $alias)
-			Yii::import($alias,$force_include);
-	}
 	
 	/**
-	 * Formats config data to array.
-	 * @param mixed $data
-	 * @return array
+	 * Apply defaults cache parameters to sitemap if it was not set directly
+	 * @param array $defaults
+	 * @param array $config By reference
+	 * @return null
 	 */
-	private function configToArray($data)
+	private function mergeCacheParams($defaults,&$config)
 	{
-		if (is_array($data))
-			return $data;
-		elseif (is_string($data))
-			return array_filter(explode(',',$data));
-		else
-			throw new Exception(Yii::t('sitemapgenerator.msg','Aliases elements must be set as string or an array.'));
+		if (!is_array($defaults) || (isset($config['cache']) && (!is_array($config['cache']))))
+			throw new Exception(Yii::t('sitemapgenerator.msg','Cache configuration must be set as array.'));
+		if (empty($defaults))
+			return;
+		if (!isset($config['cache']))
+			$config['cache']=$defaults;
 	}
 }
