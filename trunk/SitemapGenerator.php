@@ -58,6 +58,7 @@ class SitemapGenerator
 	public $default_lastmod;
 	public $default_routeStructure='application,modules,controllers';
 	public $default_model_params='model:id';
+	public $default_view_param='view';
 	
 	/**
 	 * @var array of aliases to controllers location
@@ -215,21 +216,36 @@ XMLINDEX;
 				{
 																// Parse params
 					$params= (!empty($result)) ? $this->parseParamsString($result) : array();
-					$route=$this->createRoute($alias,$m->name);
+					$action=$m->name;
 
 					if (isset($params['dataSource'])) {			// get dataSource to urls_data
 						$data_method=$params['dataSource'];
 
 						if (substr($data_method,0,6)==='model:') // Model Urls
 							$this->harvestModelUrlData($params);
-						elseif (substr($data_method,0,5)==='view:') // View Urls
+						elseif (substr($data_method,0,5)==='view:') { // View Urls
+								// CActionView GET parameter resolving
+							if ($m->name==='actions') {
+								if ($controller_instance===null)
+									$controller_instance=new $class('tempInstance');
+								$actions=$controller_instance->actions();
+								foreach ($actions as $a_name=>$a_params)
+									if ($a_params['class']==='CViewAction') {
+										if (isset($a_params['viewParam']))
+											$this->default_view_param=$a_params['viewParam'];
+										$action='action'.$a_name;
+									}
+							}
+							
 							$this->harvestViewUrlData($params);
-						else {										// Method Urls
+						} else {										// Method Urls
 							if ($controller_instance===null)
 								$controller_instance=new $class('tempInstance');
 							$params['urls_data']=$controller_instance->{$data_method}();
 						}
 					}
+					
+					$route=$this->createRoute($alias,$action);
 					$this->parseUrls($route,$params);
 				}
 			}
@@ -342,7 +358,7 @@ XMLINDEX;
 		if (isset($params['params']) && (substr($params['params'],0,5)==='view:'))
 			$view_param=trim(substr($params['params'],5));
 		if (empty($view_param))
-			$view_param='view';
+			$view_param=$this->default_view_param;
 		
 		foreach ($view_aliases as $alias)
 		{
@@ -593,7 +609,7 @@ XMLINDEX;
 	 * Logs current exception error
 	 * @param Exception $e 
 	 */
-	private static function logExceptionError($e)
+	public static function logExceptionError($e)
 	{
 	    Yii::log(Yii::t('sitemapgenerator.msg','SitemapGenerator error: {error}',array('{error}'=>$e->getMessage())), CLogger::LEVEL_ERROR, 'application.sitemapGenerator');
 	}
