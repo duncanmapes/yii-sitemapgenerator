@@ -7,12 +7,26 @@ Expected directory structure: _protected/extensions/sitemapgenerator/!SitemapGen
 {{{
 <?php
 return array(
+	...
+	'controllerMap'=>array(
+		'sitemap'=>array(
+			'class'=>'ext.sitemapgenerator.SGController',
+			'config'=>array(
+				'sitemap.xml'=>array(
+					'aliases'=>array(
+						'application.controllers',
+					),
+				),
+			),
+		),
+	),
+	...
 	'components'=>array(
 		'urlManager'=>array(
 			'rules'=>array(
 				array(
 					'class'=>'ext.sitemapgenerator.SGUrlRule',
-					'route'=>'/site/sitemap', // Optional. Default: '/site/sitemap'
+					'route'=>'/sitemap', // Optional. Default: '/sitemap'
 					),
 				
 			),
@@ -21,19 +35,6 @@ return array(
 );
 
 
-}}}
-
-3. Add to controller _sitemap_ provider action
-{{{
-/**
- * Declares class-based actions.
- */
-public function actions()
-{
-	return array(
-		'sitemap'=>array('class'=>'ext.sitemapgenerator.SGAction')
-	);
-}
 }}}
 
 That's all.
