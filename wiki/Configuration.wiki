@@ -69,4 +69,4 @@ Example:
 	),
 ),
 }}}
-Note: every sitemap file has the same configuration parameters as was shown in first section (single sitemap.xml file).
+Note: for every sitemap file available the same configuration parameters as was shown in first section (single sitemap.xml file).
