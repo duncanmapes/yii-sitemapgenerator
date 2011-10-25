@@ -47,6 +47,7 @@ class SGController extends CController
 			$this->mergeCacheParams($this->cache,$map_config);
 			
 				// Cache
+			$cachemode=false;
 			if (isset($map_config['cache']) && (!empty($map_config['cache']))) {
 				$cache=Yii::app()->{$map_config['cache'][0]};
 				if ($cache===null)
@@ -69,6 +70,7 @@ class SGController extends CController
 			}
 			
 				// GZencode mode
+			$gzmode=false;
 			if (isset($map_config['gzencode']) && $map_config['gzencode']) {
 				$this->checkAndDisableGz();
 				$gzmode=true;
