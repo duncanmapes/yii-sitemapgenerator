@@ -281,9 +281,9 @@ XMLINDEX;
 			
 		$model_data_name=substr($params['dataSource'],6);
 		
-		if (preg_match('/^\w+$/ui', $model_data_name))
-			$models=$model_data_name::model()->findAll();
-		else
+		if (preg_match('/^\w+$/ui', $model_data_name)) {
+			$models=$this->evalModelAttr($model_data_name.'::model()->findAll()');
+		} else
 			$models=$this->evalModelAttr($model_data_name);
 		
 		if ($models!==null && is_array($models))
