@@ -33,21 +33,21 @@
  * Otherwise, use 'route' option.
  * 
  * dataSource method must return array of urls data (array formatted):
- 
-array(
-	array(
-		'route'=>'/site/page',					// or 'loc'=>'http://www.example.com/specialLocation',
-		'params'=>array('view'=>'about'),
-		'priority'=>0.8,
-		'changefreq'=>'monthly',
-		'lastmod'=>'2012-12-25',
-	),
-	array(
-		...
-	),
-	...
-);
-
+ *
+ * array(
+ *	array(
+ *		'route'=>'/site/page',					// or 'loc'=>'http://www.example.com/specialLocation',
+ *		'params'=>array('view'=>'about'),
+ *		'priority'=>0.8,
+ *		'changefreq'=>'monthly',
+ *		'lastmod'=>'2012-12-25',
+ *	),
+ *	array(
+ *		...
+ *	),
+ *	...
+ * );
+ *
  * All keys are optional. If not set, then will be used values from docComment options,
  * and then default values.
  */
