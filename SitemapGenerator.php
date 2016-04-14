@@ -191,7 +191,7 @@ XMLINDEX;
 		if (is_dir($path)) {
 			$files=scandir(Yii::getPathOfAlias($alias));
 			foreach ($files as $file)
-				if (($pos=strpos($file,'Controller'))!==false) 
+				if (($pos=strpos($file,'Controller.php'))!==false) 
 						$this->parseController($alias.'.'.basename($file,'.php'));
 		} elseif (is_file($path.'.php')) {
 			if (($pos=strpos(basename($path),'Controller'))!==false) 
