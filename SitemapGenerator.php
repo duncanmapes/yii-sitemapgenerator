@@ -435,12 +435,14 @@ XMLINDEX;
 		$raw=array_filter($raw);
 		$data=array();
 		foreach ($raw as $param) {
-			list($key,$val)=explode('=',$param,2);
-			
-			if (empty($val))
-				throw new Exception(Yii::t('sitemapgenerator.msg',"Option '{key}' cannot be empty.",array('{key}'=>$key)));
-			
-			$data[$key]=$val;
+		    if(is_null($param)===false && strlen(trim($param))>0){
+		        list($key,$val)=explode('=',$param,2);
+		        
+		        if (empty($val))
+		            throw new Exception(Yii::t('sitemapgenerator.msg',"Option '{key}' cannot be empty.",array('{key}'=>$key)));
+		        
+		        $data[$key]=$val;
+			}
 		}
 		return $data;
 	}
