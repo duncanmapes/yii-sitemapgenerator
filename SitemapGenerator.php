@@ -227,7 +227,7 @@ XMLINDEX;
 					$action=$m->name;
 
 					if (isset($params['dataSource'])) {			// get dataSource to urls_data
-						$data_method=$params['dataSource'];
+						$data_method=trim($params['dataSource']);
 
 						if (substr($data_method,0,6)==='model:') // Model Urls
 							$this->harvestModelUrlData($params);
