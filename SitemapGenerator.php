@@ -191,7 +191,7 @@ XMLINDEX;
 		if (is_dir($path)) {
 			$files=scandir(Yii::getPathOfAlias($alias));
 			foreach ($files as $file)
-				if (($pos=strpos($file,'Controller'))!==false) 
+				if (($pos=strpos($file,'Controller.php'))!==false) 
 						$this->parseController($alias.'.'.basename($file,'.php'));
 		} elseif (is_file($path.'.php')) {
 			if (($pos=strpos(basename($path),'Controller'))!==false) 
@@ -227,7 +227,7 @@ XMLINDEX;
 					$action=$m->name;
 
 					if (isset($params['dataSource'])) {			// get dataSource to urls_data
-						$data_method=$params['dataSource'];
+						$data_method=trim($params['dataSource']);
 
 						if (substr($data_method,0,6)==='model:') // Model Urls
 							$this->harvestModelUrlData($params);
@@ -435,12 +435,14 @@ XMLINDEX;
 		$raw=array_filter($raw);
 		$data=array();
 		foreach ($raw as $param) {
-			list($key,$val)=explode('=',$param,2);
-			
-			if (empty($val))
-				throw new Exception(Yii::t('sitemapgenerator.msg',"Option '{key}' cannot be empty.",array('{key}'=>$key)));
-			
-			$data[$key]=$val;
+		    if(is_null($param)===false && strlen(trim($param))>0){
+		        list($key,$val)=explode('=',$param,2);
+		        
+		        if (empty($val))
+		            throw new Exception(Yii::t('sitemapgenerator.msg',"Option '{key}' cannot be empty.",array('{key}'=>$key)));
+		        
+		        $data[$key]=$val;
+			}
 		}
 		return $data;
 	}
